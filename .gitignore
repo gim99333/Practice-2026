@@ -1,0 +1,18 @@
+www/
+requirements.txt
+__pycache__/
+migrations/
+*env/
+*.mp4
+*.log
+aa*
+
+# Environments
+.env
+.venv
+
+# PyCharm
+.idea/
+
+# Text backup files
+*.bak

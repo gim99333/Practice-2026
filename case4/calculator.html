@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивный калькулятор (корректная обработка разделителей)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-group input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-sum {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-diff {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-mult {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .btn-div {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .result-group {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .result-group label {
+            display: block;
+            color: #555;
+            font-weight: 500;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .result-box {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            min-height: 60px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            word-wrap: break-word;
+            transition: all 0.3s ease;
+        }
+
+        .result-box.error {
+            color: #f5576c;
+            border-color: #f5576c;
+            background: #fff0f0;
+        }
+
+        .result-box.success {
+            color: #43e97b;
+            border-color: #43e97b;
+        }
+
+        .info-hint {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>🧮 Интерактивный калькулятор</h1>
+        
+        <div class="input-group">
+            <label>📝 Первое число:</label>
+            <input type="text" id="num1" placeholder="Введите число (примеры: 2 3.14 3,14 5. 5,)">
+        </div>
+
+        <div class="input-group">
+            <label>📝 Второе число:</label>
+            <input type="text" id="num2" placeholder="Введите число (примеры: 2 3.14 3,14 5. 5,)">
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-sum" id="sumBtn">➕ Сумма</button>
+            <button class="btn btn-diff" id="diffBtn">➖ Разность</button>
+            <button class="btn btn-mult" id="multBtn">✖️ Произведение</button>
+            <button class="btn btn-div" id="divBtn">➗ Деление</button>
+        </div>
+
+        <div class="result-group">
+            <label>🎯 Результат:</label>
+            <div class="result-box" id="resultBox">—</div>
+        </div>
+        <div class="info-hint">
+            💡 Подсказка: 5.0 можно вводить как 5, 5.0, 5,0, 5., 5,
+        </div>
+    </div>
+
+    <script>
+        // Получаем элементы DOM
+        const num1Input = document.getElementById('num1');
+        const num2Input = document.getElementById('num2');
+        const resultBox = document.getElementById('resultBox');
+
+        /**
+         * Функция для преобразования строки в число с поддержкой точки и запятой
+         * Дополнительно: "5." и "5," преобразуются в 5.0
+         * @param {string} str - Входная строка
+         * @returns {Object} - { isValid: boolean, value: number|null, error: string|null }
+         */
+        function parseNumberWithComma(str) {
+            // Убираем лишние пробелы
+            let trimmed = str.trim();
+            
+            // Проверка на пустую строку
+            if (trimmed === '') {
+                return { isValid: false, value: null, error: 'empty' };
+            }
+            
+            // СНАЧАЛА проверяем на множественные разделители (ДО преобразования "5." в "5.0")
+            const commaCount = (trimmed.match(/,/g) || []).length;
+            const dotCount = (trimmed.match(/\./g) || []).length;
+            
+            // Если больше одной запятой - ошибка
+            if (commaCount > 1) {
+                return { isValid: false, value: null, error: 'multipleCommas' };
+            }
+            
+            // Если больше одной точки - ошибка
+            if (dotCount > 1) {
+                return { isValid: false, value: null, error: 'multipleDots' };
+            }
+            
+            // Если есть и точка, и запятая - ошибка (смешанный формат)
+            if (commaCount === 1 && dotCount === 1) {
+                return { isValid: false, value: null, error: 'mixedSeparators' };
+            }
+            
+            // ТЕПЕРЬ обрабатываем специальный случай: строка заканчивается на . или ,
+            // (но только если нет других ошибок)
+            if (trimmed.endsWith('.') || trimmed.endsWith(',')) {
+                // Добавляем ноль после разделителя
+                trimmed = trimmed.slice(0, -1) + '.0';
+            }
+            
+            // Заменяем запятую на точку (это десятичный разделитель)
+            let normalized = trimmed.replace(',', '.');
+            
+            // Преобразуем в число с явным указанием системы счисления (десятичная)
+            const number = Number(normalized);
+            
+            // Проверяем, что получилось валидное число
+            if (Number.isNaN(number)) {
+                return { isValid: false, value: null, error: 'notANumber' };
+            }
+            
+            // Проверяем, что число конечное
+            if (!Number.isFinite(number)) {
+                return { isValid: false, value: null, error: 'infinite' };
+            }
+            
+            return { isValid: true, value: number, error: null };
+        }
+
+        /**
+         * Функция валидации входных данных с поддержкой запятой и "5."/"5,"
+         */
+        function validateNumbers() {
+            // Получаем значения как строки
+            const rawValue1 = num1Input.value;
+            const rawValue2 = num2Input.value;
+            
+            // Проверка на пустоту
+            if (rawValue1 === '') {
+                resultBox.innerHTML = '❌ Ошибка: Пожалуйста, введите первое число!';
+                resultBox.classList.add('error');
+                resultBox.classList.remove('success');
+                return false;
+            }
+            
+            if (rawValue2 === '') {
+                resultBox.innerHTML = '❌ Ошибка: Пожалуйста, введите второе число!';
+                resultBox.classList.add('error');
+                resultBox.classList.remove('success');
+                return false;
+            }
+            
+            // Парсим первое число с поддержкой запятой и "5."
+            const result1 = parseNumberWithComma(rawValue1);
+            if (!result1.isValid) {
+                let errorMsg = '';
+                switch(result1.error) {
+                    case 'empty':
+                        errorMsg = 'Первое число не может быть пустым!';
+                        break;
+                    case 'multipleCommas':
+                        errorMsg = `"${rawValue1}" содержит несколько запятых. Используйте одну запятую или точку.`;
+                        break;
+                    case 'multipleDots':
+                        errorMsg = `"${rawValue1}" содержит несколько точек. Используйте одну точку или запятую.`;
+                        break;
+                    case 'mixedSeparators':
+                        errorMsg = `"${rawValue1}" содержит и точку, и запятую. Используйте что-то одно!`;
+                        break;
+                    case 'notANumber':
+                        errorMsg = `"${rawValue1}" не является числом! Используйте цифры, точку или запятую.`;
+                        break;
+                    case 'infinite':
+                        errorMsg = 'Число слишком большое или слишком маленькое!';
+                        break;
+                    default:
+                        errorMsg = 'Некорректный формат числа!';
+                }
+                resultBox.innerHTML = `❌ Ошибка: ${errorMsg}`;
+                resultBox.classList.add('error');
+                resultBox.classList.remove('success');
+                return false;
+            }
+            
+            // Парсим второе число с поддержкой запятой и "5."
+            const result2 = parseNumberWithComma(rawValue2);
+            if (!result2.isValid) {
+                let errorMsg = '';
+                switch(result2.error) {
+                    case 'empty':
+                        errorMsg = 'Второе число не может быть пустым!';
+                        break;
+                    case 'multipleCommas':
+                        errorMsg = `"${rawValue2}" содержит несколько запятых. Используйте одну запятую или точку.`;
+                        break;
+                    case 'multipleDots':
+                        errorMsg = `"${rawValue2}" содержит несколько точек. Используйте одну точку или запятую.`;
+                        break;
+                    case 'mixedSeparators':
+                        errorMsg = `"${rawValue2}" содержит и точку, и запятую. Используйте что-то одно!`;
+                        break;
+                    case 'notANumber':
+                        errorMsg = `"${rawValue2}" не является числом! Используйте цифры, точку или запятую.`;
+                        break;
+                    case 'infinite':
+                        errorMsg = 'Число слишком большое или слишком маленькое!';
+                        break;
+                    default:
+                        errorMsg = 'Некорректный формат числа!';
+                }
+                resultBox.innerHTML = `❌ Ошибка: ${errorMsg}`;
+                resultBox.classList.add('error');
+                resultBox.classList.remove('success');
+                return false;
+            }
+            
+            // Возвращаем числа в правильном формате
+            return { 
+                num1: result1.value, 
+                num2: result2.value 
+            };
+        }
+
+        /**
+         * Функция для отображения результата
+         */
+        function displayResult(value) {
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                // Форматируем результат
+                const formatted = parseFloat(value.toFixed(10));
+                resultBox.innerHTML = `✅ Результат: ${formatted}`;
+                resultBox.classList.add('success');
+                resultBox.classList.remove('error');
+            } else if (typeof value === 'string') {
+                resultBox.innerHTML = value;
+                resultBox.classList.add('error');
+                resultBox.classList.remove('success');
+            }
+        }
+
+        // Функция "Сумма"
+        function getSum() {
+            const validation = validateNumbers();
+            if (!validation) return;
+            
+            const result = validation.num1 + validation.num2;
+            displayResult(result);
+        }
+
+        // Функция "Разность"
+        function getDifference() {
+            const validation = validateNumbers();
+            if (!validation) return;
+            
+            const result = validation.num1 - validation.num2;
+            displayResult(result);
+        }
+
+        // Функция "Произведение"
+        function getProduct() {
+            const validation = validateNumbers();
+            if (!validation) return;
+            
+            const result = validation.num1 * validation.num2;
+            displayResult(result);
+        }
+
+        // Функция "Деление"
+        function getDivision() {
+            const validation = validateNumbers();
+            if (!validation) return;
+            
+            if (validation.num2 === 0) {
+                displayResult('❌ Ошибка: Деление на ноль невозможно!');
+                return;
+            }
+            
+            const result = validation.num1 / validation.num2;
+            displayResult(result);
+        }
+
+        // Добавляем обработчики событий на кнопки
+        document.getElementById('sumBtn').addEventListener('click', getSum);
+        document.getElementById('diffBtn').addEventListener('click', getDifference);
+        document.getElementById('multBtn').addEventListener('click', getProduct);
+        document.getElementById('divBtn').addEventListener('click', getDivision);
+
+        // Добавляем возможность нажатия Enter для быстрого ввода
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                getSum();
+            }
+        }
+
+        num1Input.addEventListener('keypress', handleKeyPress);
+        num2Input.addEventListener('keypress', handleKeyPress);
+
+        // Очищаем стили при вводе новых значений
+        function clearResultStyle() {
+            if (resultBox.classList.contains('error') || resultBox.classList.contains('success')) {
+                resultBox.classList.remove('error', 'success');
+                resultBox.innerHTML = '—';
+            }
+        }
+
+        num1Input.addEventListener('input', clearResultStyle);
+        num2Input.addEventListener('input', clearResultStyle);
+    </script>
+</body>
+</html>

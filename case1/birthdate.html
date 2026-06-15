@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Калькулятор даты рождения</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1a1a2e;
+            color: #00ff00;
+            padding: 20px;
+        }
+        pre {
+            background: #0d0d1a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>📅 Калькулятор даты рождения</h1>
+    <p>Результат выводится в консоль или в диалоговое окно после ввода данных</p>
+    <pre id="output"></pre>
+
+    <script>
+        // Перехват console.log для вывода на страницу
+        var outputDiv = document.getElementById('output');
+        var originalLog = console.log;
+        
+        console.log = function() {
+            var args = Array.from(arguments);
+            var text = args.join(' ');
+            originalLog.apply(console, arguments);
+            if (outputDiv) {
+                outputDiv.innerHTML += text + '\n';
+            }
+        };
+
+        // Основной код
+        // Циферьки через звездочки, фото 4Х5 :)
+        var ledDigits = {
+            '0': ['****', '*  *', '*  *', '*  *', '****'],
+            '1': ['  * ', ' ** ', '  * ', '  * ', ' ***'],
+            '2': ['****', '   *', '****', '*   ', '****'],
+            '3': ['****', '   *', '****', '   *', '****'],
+            '4': ['*  *', '*  *', '****', '   *', '   *'],
+            '5': ['****', '*   ', '****', '   *', '****'],
+            '6': ['****', '*   ', '****', '*  *', '****'],
+            '7': ['****', '  * ', ' *  ', '*   ', '*   '],
+            '8': ['****', '*  *', '****', '*  *', '****'],
+            '9': ['****', '*  *', '****', '   *', '****']
+        };
+
+        var daysOfWeek = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+
+        // Получение дня недели
+        function getDayOfWeek(day, month, year) {
+            var date = new Date(year, month - 1, day);
+            return daysOfWeek[date.getDay()];
+        }
+
+        // Вискоконсый год?
+        function isLeapYear(year) {
+            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+        }
+
+        // И сколько же нам лет?
+        function calculateAge(day, month, year) {
+            var today = new Date();
+            var birthDate = new Date(year, month - 1, day);
+            var age = today.getFullYear() - birthDate.getFullYear();
+            var monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        // Правильно ли ввели дату
+        function isValidDate(day, month, year) {
+            var date = new Date(year, month - 1, day);
+            return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+        }
+
+        // Ведущие нули в дне-месяце даты
+        function padZero(num) {
+            return num < 10 ? '0' + num : '' + num;
+        }
+
+        // Выводим дату в звездочках!
+        function displayDateAsLed(day, month, year) {
+            var allDigits = (padZero(day) + padZero(month) + year.toString()).split('');
+            var patterns = [];
+            for (var i = 0; i < allDigits.length; i++) {
+                patterns.push(ledDigits[allDigits[i]]);
+            }
+            var lines = [];
+            for (var row = 0; row < 5; row++) {
+                var line = '';
+                for (var i = 0; i < patterns.length; i++) {
+                    line += patterns[i][row];
+                    if (i === 1 || i === 3) {
+                        line += '  ';
+                    } else if (i < patterns.length - 1) {
+                        line += ' ';
+                    }
+                }
+                lines.push(line);
+            }
+            return lines;
+        }
+
+        // Основная функция, которая все считает и считает, а потом кааак напишет что надумала!
+        function runCalculator() {
+            var day, month, year;
+            var currentYear = new Date().getFullYear();
+
+            while (true) {
+                var inputDay = prompt('Введите день вашего рождения (1-31):');
+                if (inputDay === null) { console.log('Программа отменена'); return; }
+                day = parseInt(inputDay, 10);
+                if (!isNaN(day) && day >= 1 && day <= 31) break;
+                console.log('Ошибка: день должен быть от 1 до 31');
+            }
+
+            while (true) {
+                var inputMonth = prompt('Введите месяц вашего рождения (1-12):');
+                if (inputMonth === null) { console.log('Программа отменена'); return; }
+                month = parseInt(inputMonth, 10);
+                if (!isNaN(month) && month >= 1 && month <= 12) break;
+                console.log('Ошибка: месяц должен быть от 1 до 12');
+            }
+
+            while (true) {
+                var inputYear = prompt('Введите год вашего рождения (1900-' + currentYear + '):');
+                if (inputYear === null) { console.log('Программа отменена'); return; }
+                year = parseInt(inputYear, 10);
+                if (!isNaN(year) && year >= 1900 && year <= currentYear) break;
+                console.log('Ошибка: год должен быть от 1900 до ' + currentYear);
+            }
+
+            if (!isValidDate(day, month, year)) {
+                console.log('Ошибка: такой даты не существует!');
+                return;
+            }
+
+            console.log('\n============================================================');
+            console.log('                    РЕЗУЛЬТАТЫ');
+            console.log('============================================================\n');
+            console.log('Дата рождения: ' + padZero(day) + '.' + padZero(month) + '.' + year);
+            console.log('День недели: ' + getDayOfWeek(day, month, year));
+            console.log('Год ' + year + (isLeapYear(year) ? ' високосный' : ' не високосный'));
+            console.log('Ваш возраст: ' + calculateAge(day, month, year) + ' лет');
+            console.log('\n========== ДАТА В ФОРМАТЕ LED (5x4) ==========\n');
+            var ledLines = displayDateAsLed(day, month, year);
+            for (var i = 0; i < ledLines.length; i++) {
+                console.log(ledLines[i]);
+            }
+            console.log('\n============================================================\n');
+        }
+
+        runCalculator();
+    </script>
+</body>
+</html>

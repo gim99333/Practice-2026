@@ -1,0 +1,46 @@
+{% extends 'greetings/base.html' %}
+
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+<div class="greeting-container">
+    {% if name %}
+        <div class="welcome-message">
+            <h2>Здравствуйте, <b>{{ name|capfirst }}</b>!</h2>
+            <p><i>Неизмерно рады видеть Вас - яркий свет наших очей!</i></p>
+        </div>
+    {% endif %}
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="name-form">
+        {% csrf_token %}
+        <div class="form-group">
+            {{ form.name }}
+            <button type="submit" class="submit-btn">Submit</button>
+        </div>
+    </form>
+
+
+    {% if all_names %}
+        <div class="recent-names">
+            <h3>Последние посетители:</h3>
+            <ul>
+                {% for name in all_names %}
+                    <li>{{ name.name }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+
